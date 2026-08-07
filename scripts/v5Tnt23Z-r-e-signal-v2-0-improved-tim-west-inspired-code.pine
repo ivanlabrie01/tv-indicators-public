@@ -1,0 +1,8 @@
+study("R.E.Signal V2.0", overlay=true)
+rangeup = close[1]+tr[1]
+rangedown = close[1]-tr[1]
+over() => high > rangeup and close > open and low > low[1]
+under() => low < rangedown and close < open and high < high[1]
+inside() => high < high[1] and low > low[1]
+outside() => high > high[1] and low < low[1]
+barcolor(over() ? green: under() ? red: inside() ? black: outside() ? black: na)

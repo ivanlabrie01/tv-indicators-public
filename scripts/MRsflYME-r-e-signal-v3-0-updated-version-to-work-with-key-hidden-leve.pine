@@ -1,0 +1,7 @@
+study("R.E.Signal V3.0", overlay=true)
+rangeup = close[1]+tr[1]
+rangedown = close[1]-tr[1]
+over() => high > rangeup and close > open and low > low[1]
+under() => low < rangedown and close < open and high < high[1]
+plotshape(over(), style=shape.triangleup, location=location.belowbar, color=green)
+plotshape(under(), style=shape.triangledown, location=location.abovebar, color=red)

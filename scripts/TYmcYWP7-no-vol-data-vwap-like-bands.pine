@@ -1,0 +1,24 @@
+study(title = "POC Dots", shorttitle="POC Dots", overlay=true)
+resCustom = input(title="Timeframe", type=resolution, defval="15")
+Length = input(4, minval=1)
+xPrice = security(tickerid, resCustom, hlc3)
+xvnoise = abs(xPrice - xPrice[1])
+nfastend = 0.666
+nslowend = 0.0645
+nsignal = abs(xPrice - xPrice[Length])
+nnoise = sum(xvnoise, Length)
+nefratio = iff(nnoise != 0, nsignal / nnoise, 0)
+nsmooth = pow(nefratio * (nfastend - nslowend) + nslowend, 2) 
+nAMA = nz(nAMA[1]) + nsmooth * (xPrice - nz(nAMA[1]))
+basis = nAMA
+
+BB_length = input(24, minval=1,maxval=100)
+BB_stdDev = input(2, minval=1, maxval=3)
+
+dev = BB_stdDev * stdev(nAMA, BB_length)
+upper = basis + dev
+lower = basis - dev
+plot(basis, color=red)
+p1 = plot(upper, color=blue)
+p2 = plot(lower, color=blue)
+fill(p1,p2, blue)

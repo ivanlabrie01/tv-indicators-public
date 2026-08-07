@@ -1,0 +1,8 @@
+study("Pair trader", overlay=true)
+Pair1 = security((input("FX_IDC:audusd")), input("D"), hl2)
+Pair2 = security((input("FX_IDC:nzdusd")), input("D"), hl2)
+PairA = plot(Pair1, color=yellow)
+PairB = plot(Pair2, color=black)
+fill(PairA, PairB, white, 80, "Spread")
+Spread = Pair1 - Pair2
+plotarrow(Spread, colorup=teal, colordown=orange, transp=80)

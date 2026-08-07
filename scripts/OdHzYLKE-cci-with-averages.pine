@@ -1,0 +1,18 @@
+study(title="CCI with averages")
+
+cciLength = input(title="CCI Length", type=integer, defval=11, minval=3, maxval=100)
+source = input(title="Source", defval=hlc3)
+len2 = input(9, minval=1, title="EMA #1")
+len3 = input(45, minval=1, title="EMA #2")
+
+cci = cci(source, cciLength)
+ema1CCI = ema(cci,len2)
+ema2CCI = ema(cci,len3)
+
+plot(cci, title="CCI Histogram", style=histogram)
+plot(ema1CCI, title="EMA #1", style=line, linewidth=1, color=black)
+plot(ema2CCI, title="EMA #2", style=line, linewidth=1, color=blue)
+
+hline(0, title="Zero Line", color=black, linestyle=solid)
+hline(100, title="100 Line", color=black, linestyle=dotted)
+hline(-100, title="-100 Line", color=black, linestyle=dotted)

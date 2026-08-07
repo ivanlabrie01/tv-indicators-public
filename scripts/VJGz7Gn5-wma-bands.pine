@@ -1,0 +1,32 @@
+study(title="WMA Bands", shorttitle="WMAB", overlay=true)
+source = close
+length = input(240, minval=1, title = "WMA Length")
+atrlen = input(500, minval=1, title = "ATR Length")
+mult1 = 3.2
+mult2 = 6.4
+mult3 = 9.5
+ma = wma(source, length)
+range =  tr
+rangewma = wma(range, atrlen)
+
+up1 = ma + rangewma * mult1
+up2 = ma + rangewma * mult2
+up3 = ma + rangewma * mult3
+
+dn1 = ma - rangewma * mult1
+dn2 = ma - rangewma * mult2
+dn3 = ma - rangewma * mult3
+
+plot(ma, color=black)
+
+color1 = silver
+color2 = red
+color3 = maroon
+
+up01 = plot(up1, color = color1)
+up02 = plot(up2, color = color2)
+up03 = plot(up3, color = color3)
+
+dn01 = plot(dn1, color = color1)
+dn02 = plot(dn2, color = color2)
+dn03 = plot(dn3, color = color3)

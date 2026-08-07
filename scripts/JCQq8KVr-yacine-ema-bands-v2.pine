@@ -1,0 +1,50 @@
+study(title="Yacine EMA Bands", shorttitle="YEMAB", overlay=true)
+source = close
+length = input(125, minval=1, title = "EMA Length")
+atrlen = input(500, minval=1, title = "ATR Length")
+mult1 = input(3.2, minval=1, title = "Deviation multiplier 1")
+mult2 = input(6.4, minval=1, title = "Deviation multiplier 2")
+mult3 = input(9.5, minval=1, title = "Deviation multiplier 3")
+ma = ema(source, length)
+range =  tr
+rangema = ema(range, atrlen)
+
+up1 = ma + rangema * mult1
+up2 = ma + rangema * mult2
+up3 = ma + rangema * mult3
+
+dn1 = ma - rangema * mult1
+dn2 = ma - rangema * mult2
+dn3 = ma - rangema * mult3
+
+plot(ma, color=black)
+
+color1 = lime
+color2 = orange
+color3 = maroon
+
+//plot(up1, color = color1)
+//plot(up2, color = color1)
+//plot(up3, color = color1)
+u4 = plot(up1, color = color1)
+//plot(up5, color = color2)
+//plot(up6, color = color2)
+//plot(up7, color = color2)
+u8 = plot(up2, color = color2)
+//plot(up9, color = color3)
+//plot(up10, color = color3)
+//plot(up11, color = color3)
+u12 = plot(up3, color = color3)
+
+//plot(dn1, color = color1)
+//plot(dn2, color = color1)
+//plot(dn3, color = color1)
+d4 = plot(dn1, color = color1)
+//plot(dn5, color = color2)
+//plot(dn6, color = color2)
+//plot(dn7, color = color2)
+d8 = plot(dn2, color = color2)
+//plot(dn9, color = color3)
+//plot(dn10, color = color3)
+//plot(dn11, color = color3)
+d12 = plot(dn3, color = color3)

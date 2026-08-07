@@ -1,0 +1,20 @@
+study(title = "POC bands 2.0", shorttitle="POCB", overlay=true)
+resCustom = input(title="Timeframe", type=resolution, defval="240")
+Length = input(6, minval=1)
+xPrice = security(tickerid, resCustom, hlc3)
+xvnoise = abs(xPrice - xPrice[1])
+nfastend = 0.666
+nslowend = 0.0645
+nsignal = abs(xPrice - xPrice[Length])
+nnoise = sum(xvnoise, Length)
+nefratio = iff(nnoise != 0, nsignal / nnoise, 0)
+nsmooth = pow(nefratio * (nfastend - nslowend) + nslowend, 2) 
+nAMA = nz(nAMA[1]) + nsmooth * (xPrice - nz(nAMA[1]))
+basis = nAMA
+atr = ema(tr,11)
+upper = basis[3] + (atr*3)
+lower = basis[3] - (atr*3)
+
+plot(basis, color=blue)
+plot(upper, color=blue)
+plot(lower, color=blue)

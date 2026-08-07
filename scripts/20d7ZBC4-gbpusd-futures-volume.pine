@@ -1,0 +1,3 @@
+study("GBPUSD Futures Volume", precision=0)
+vol1 = security("CME_MINI:MB1!", period, volume)
+plot(vol1, title='GBPUSD', style=histogram, trackprice=false,linewidth=4, color=black)

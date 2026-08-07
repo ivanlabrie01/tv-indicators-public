@@ -1,0 +1,35 @@
+study(title="Moving averages and bands", overlay=true)
+//10 period high and low sma's
+highma = sma(high, 10)
+lowma = sma(low, 10)
+bull=crossover(close,highma)
+bear=crossunder(close,lowma)
+//4 period MA slope
+avg = sma(close,4)
+avgup = avg >= avg[3]
+avgdown = avg < avg[3]
+//Bollinger Bands and Bollinger Bands' Width
+basis = sma(close, 21)
+dev = stdev(close, 21)
+upper = basis + (2*dev)
+lower = basis - (2*dev)
+bbw = (upper - lower)/basis
+bbwup = bbw >= bbw[3]
+bbwdown = bbw < bbw[3]
+//plots
+p1=plot(highma, color = green, linewidth=2, style=line, transp=50)
+p2=plot(lowma, color = maroon, linewidth=2, style=line, transp=50)
+fill(p1, p2, color=green)
+
+p3=plotshape(avgup, style=shape.triangleup, color=green,location=location.bottom)
+p4=plotshape(avgdown, style=shape.triangledown, color=red, location=location.bottom)
+
+p5=plot(upper, linewidth=2, style=line, transp=70, color=teal)
+p6=plot(lower, linewidth=2, style=line, transp=70, color=teal)
+fill(p5, p6, color=white)
+
+p7=bgcolor(bull ? green : na, transp=90)
+p8=bgcolor(bear ? red : na, transp=90)
+
+p9=plotshape(bbwup, style=shape.triangleup, color=green,location=location.top)
+p10=plotshape(bbwdown, style=shape.triangledown, color=red, location=location.top)

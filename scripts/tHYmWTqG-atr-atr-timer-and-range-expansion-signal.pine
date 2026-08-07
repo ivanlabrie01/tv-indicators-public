@@ -1,0 +1,12 @@
+study(title="ATR%", shorttitle="ATR%", overlay=false)
+source = close
+length = input(1, minval=1, title = "EMA Length")
+atrlen = input(10, minval=1, title = "ATR Length")
+ma = ema(source, length)
+range =  tr
+rangema = ema(range, atrlen)
+
+atrp = (rangema/ma)*100
+avg = ema(atrp,30)
+plot(atrp, color=black)
+plot(avg, color=maroon)
