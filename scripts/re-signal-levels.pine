@@ -5,9 +5,9 @@
 // ============================================================================
 //  WHAT THIS IS, AND HOW IT DIFFERS FROM THE ORIGINAL R.E.SIGNAL
 //
-//  The original R.E.Signal marks a bar AFTER it closes as a range expansion.
-//  Useful as a record, useless while you are deciding: by the time the marker
-//  prints, the move it describes has already happened.
+//  The original R.E.Signal marks a bar as a range expansion once price has
+//  already travelled far enough to qualify it. So the marker tells you the move
+//  happened; it does not tell you, beforehand, what price would make it happen.
 //
 //  The threshold it tests is knowable at the OPEN of the current bar, because
 //  both inputs are already fixed by the prior bar:
@@ -20,8 +20,8 @@
 //  down. Same arithmetic as the 2015 original, read forwards instead of back.
 //
 //  It is a level, not a prediction. Price reaching it means the bar qualifies
-//  on the range test alone — the direction-of-close condition is only knowable
-//  at the close, so a touch is not a completed signal.
+//  on the range test alone. The direction condition is not settled until the
+//  bar closes, so a touch is not a completed signal.
 //
 //  VOLUME CONFIRMATION (optional, off by default) shades the background on
 //  confirmed expansions that also expanded volume against the prior bar. An
@@ -51,7 +51,7 @@ showLabels = input.bool(false, "Label the two prices", group = grpL)
 
 // ── Confirmed signals ───────────────────────────────────────────────────────
 grpS    = "Confirmed expansions"
-showSig = input.bool(true, "Mark them at the close", group = grpS)
+showSig = input.bool(true, "Mark confirmed expansions", group = grpS)
 strict  = input.bool(true, "Strict mode", group = grpS, tooltip = "On: also requires the bar to sit clear of the prior bar's extreme, which is the V2/V3 condition. Off: direction of close only, the original 2015 condition.")
 waitClose = input.bool(false, "Only mark once the bar has closed", group = grpS, tooltip = "OFF is the original behaviour: the triangle appears live on the forming bar as soon as the conditions are met, and can disappear again if price pulls back before the close. ON waits for the bar to close, so a mark that appears never un-appears. Off by default so this matches the published original.")
 upCol   = input.color(#26a69a, "Expansion up",   group = grpS)
