@@ -58,7 +58,6 @@ strict  = input.bool(true, "Strict mode", group = grpS, tooltip = "On: also requ
 waitClose = input.bool(false, "Only mark once the bar has closed", group = grpS, tooltip = "OFF is the original behaviour: the triangle appears live on the forming bar as soon as the conditions are met, and can disappear again if price pulls back before the close. ON waits for the bar to close, so a mark that appears never un-appears. Off by default so this matches the published original.")
 upCol   = input.color(#26a69a, "Expansion up",   group = grpS)
 dnCol   = input.color(#ef5350, "Expansion down", group = grpS)
-sigSize = input.string("Tiny", "Marker size", options = ["Tiny", "Small", "Normal"], group = grpS)
 
 // ── Volume confirmation ─────────────────────────────────────────────────────
 grpV     = "Volume confirmation"
@@ -68,8 +67,6 @@ volUpCol = input.color(#26a69a, "Up, on rising volume",   group = grpV)
 volDnCol = input.color(#ef5350, "Down, on rising volume", group = grpV)
 dimQuiet = input.bool(false, "Also shade expansions on FALLING volume, faintly", group = grpV, tooltip = "Off by default. On, it draws the same bars in a much fainter shade so you can see expansions the volume did not confirm.")
 volClosed = input.bool(false, "Only shade once the bar has closed", group = grpV, tooltip = "OFF by default, and deliberately. Live, the shading can fire mid-bar the moment the forming bar's volume passes the previous bar's completed volume — and when that happens EARLY it is the most informative version of this condition, not the least. ON removes the intrabar flicker at the cost of losing that.")
-
-sSize = sigSize == "Normal" ? size.normal : sigSize == "Small" ? size.small : size.tiny
 
 // ── The levels. Both inputs are fixed by the prior bar, so these are known at ─
 // ── the current bar's open and do not move while the bar forms. ─────────────
@@ -87,8 +84,8 @@ over  = strict ? (high > rangeup   and close > open and low  > low[1])  : (high 
 under = strict ? (low  < rangedown and close < open and high < high[1]) : (low  < rangedown and close < open)
 
 confirmed = not waitClose or barstate.isconfirmed
-plotshape(showSig and over  and confirmed, "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = sSize)
-plotshape(showSig and under and confirmed, "Expansion down", style = shape.triangledown, location = location.abovebar, color = dnCol, size = sSize)
+plotshape(showSig and over  and confirmed, "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = size.tiny)
+plotshape(showSig and under and confirmed, "Expansion down", style = shape.triangledown, location = location.abovebar, color = dnCol, size = size.tiny)
 
 // ── Volume confirmation ─────────────────────────────────────────────────────
 // Some instruments carry no volume at all (many indices and FX feeds), so this
