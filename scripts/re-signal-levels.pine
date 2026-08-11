@@ -26,15 +26,17 @@
 //  VOLUME CONFIRMATION (optional, off by default) shades the background on
 //  confirmed expansions that also expanded volume against the prior bar. An
 //  expansion on falling volume is a different event from one on rising volume,
-//  and the shading is there to stop them looking alike. It evaluates on CLOSED
-//  bars only, because a forming bar's partial volume against a completed one
-//  measures elapsed time rather than participation.
+//  and the shading is there to stop them looking alike.
 //
-//  REPAINTING, stated plainly: the triangles evaluate live, so one can appear
-//  mid-bar and disappear again if price pulls back before the close. That is
-//  the original's behaviour and it is kept as the default. There is a setting
-//  to wait for the close instead, which trades immediacy for a mark that never
-//  un-marks. No future data is used either way.
+//  BOTH THE TRIANGLES AND THE SHADING EVALUATE LIVE, and that is deliberate.
+//  A mark can appear mid-bar and disappear again if the bar turns, which is the
+//  original's behaviour and is kept. The live read is the useful one: a forming
+//  bar that has ALREADY out-traded the whole previous bar is telling you
+//  something, and it tells you most when it happens early. Waiting for the
+//  close would keep only the least interesting version of that.
+//
+//  Both can be switched to closed-bar-only in the settings if you would rather
+//  have a mark that never un-marks. No future data is used in either mode.
 // ============================================================================
 
 //@version=6
@@ -65,6 +67,7 @@ volTrans = input.int(40, "Shading transparency", minval = 0, maxval = 100, group
 volUpCol = input.color(#26a69a, "Up, on rising volume",   group = grpV)
 volDnCol = input.color(#ef5350, "Down, on rising volume", group = grpV)
 dimQuiet = input.bool(false, "Also shade expansions on FALLING volume, faintly", group = grpV, tooltip = "Off by default. On, it draws the same bars in a much fainter shade so you can see expansions the volume did not confirm.")
+volClosed = input.bool(false, "Only shade once the bar has closed", group = grpV, tooltip = "OFF by default, and deliberately. Live, the shading can fire mid-bar the moment the forming bar's volume passes the previous bar's completed volume — and when that happens EARLY it is the most informative version of this condition, not the least. ON removes the intrabar flicker at the cost of losing that.")
 
 sSize = sigSize == "Normal" ? size.normal : sigSize == "Small" ? size.small : size.tiny
 
@@ -91,12 +94,13 @@ plotshape(showSig and under and confirmed, "Expansion down", style = shape.trian
 // Some instruments carry no volume at all (many indices and FX feeds), so this
 // checks for that rather than silently treating na as "not rising" and shading
 // nothing while looking like it is working.
-// 🔴 CLOSED BARS ONLY, AND THIS IS NOT A PREFERENCE. On a forming bar `volume`
-// is whatever has accumulated so far, and comparing that against the PRIOR
-// bar's completed volume is apples to oranges: it reads false early in the bar
-// and flips true near the end regardless of whether anything happened. The
-// shading would be a clock, not a signal. So it waits for the close.
-volOk    = not na(volume) and not na(volume[1]) and barstate.isconfirmed
+// LIVE BY DEFAULT. On a forming bar `volume` is what has accumulated so far, so
+// this compares a partial bar against a completed one — and that asymmetry is
+// the point rather than a flaw. A forming bar whose volume ALREADY exceeds the
+// whole of the previous bar is the strongest version of this condition, and it
+// is strongest earliest. Late in a bar the same comparison says much less,
+// which is worth knowing but is not a reason to discard the early case.
+volOk    = not na(volume) and not na(volume[1]) and (not volClosed or barstate.isconfirmed)
 volRose  = volOk and volume > volume[1]
 
 bgUp   = useVol and over  and volRose
