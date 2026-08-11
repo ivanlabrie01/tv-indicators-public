@@ -1,0 +1,116 @@
+// This Pine Script(tm) v6 indicator is subject to the Terms of Use:
+// https://www.tradingview.com/pine-script-reference/v6/
+// R.E.Signal Levels v1.0
+// Original R.E.Signal concept & code: Ivan Labrie (2015), Tim West inspired.
+// ============================================================================
+//  WHAT THIS IS, AND HOW IT DIFFERS FROM THE ORIGINAL R.E.SIGNAL
+//
+//  The original R.E.Signal marks a bar AFTER it closes as a range expansion.
+//  Useful as a record, useless while you are deciding: by the time the marker
+//  prints, the move it describes has already happened.
+//
+//  The threshold it tests is knowable at the OPEN of the current bar, because
+//  both inputs are already fixed by the prior bar:
+//
+//      rangeup   = close[1] + tr[1]
+//      rangedown = close[1] - tr[1]
+//
+//  So this plots those two levels on the forming bar. Two dots, one above and
+//  one below: the prices at which THIS bar becomes a range expansion up or
+//  down. Same arithmetic as the 2015 original, read forwards instead of back.
+//
+//  It is a level, not a prediction. Price reaching it means the bar qualifies
+//  on the range test alone — the direction-of-close condition is only knowable
+//  at the close, so a touch is not a completed signal.
+//
+//  VOLUME CONFIRMATION (optional, off by default) shades the background on
+//  confirmed expansions that also expanded volume against the prior bar. An
+//  expansion on falling volume is a different event from one on rising volume,
+//  and the shading is there to stop them looking alike.
+// ============================================================================
+
+//@version=6
+indicator("R.E.Signal Levels", overlay = true)
+
+// ── Levels ──────────────────────────────────────────────────────────────────
+grpL       = "Trigger levels"
+showDots   = input.bool(true, "Plot the trigger levels", group = grpL)
+lvlOffset  = input.int(1, "Plot them this many bars ahead", minval = 0, maxval = 5, group = grpL, tooltip = "1 sets the dots just ahead of the forming bar, which reads more clearly than stacking them on it. The value is unchanged either way.")
+lastOnly   = input.bool(true, "Only on the most recent bar", group = grpL, tooltip = "On: one clean pair of dots at the hard right edge. Off: the levels are drawn across all history, which is heavy but useful for reviewing how often they were reached.")
+lvlCol     = input.color(#000000, "Level colour", group = grpL)
+lvlWidth   = input.int(2, "Level dot size", minval = 1, maxval = 4, group = grpL)
+showLabels = input.bool(false, "Label the two prices", group = grpL)
+
+// ── Confirmed signals ───────────────────────────────────────────────────────
+grpS    = "Confirmed expansions"
+showSig = input.bool(true, "Mark them at the close", group = grpS)
+strict  = input.bool(true, "Strict mode", group = grpS, tooltip = "On: also requires the bar to sit clear of the prior bar's extreme, which is the V2/V3 condition. Off: direction of close only, the original 2015 condition.")
+upCol   = input.color(#26a69a, "Expansion up",   group = grpS)
+dnCol   = input.color(#ef5350, "Expansion down", group = grpS)
+sigSize = input.string("Tiny", "Marker size", options = ["Tiny", "Small", "Normal"], group = grpS)
+
+// ── Volume confirmation ─────────────────────────────────────────────────────
+grpV     = "Volume confirmation"
+useVol   = input.bool(false, "Shade expansions that also expanded volume", group = grpV, tooltip = "Highlights bars where the range expanded AND volume rose against the prior bar. Applies across all history, not just the last bar.")
+volTrans = input.int(40, "Shading transparency", minval = 0, maxval = 100, group = grpV)
+volUpCol = input.color(#26a69a, "Up, on rising volume",   group = grpV)
+volDnCol = input.color(#ef5350, "Down, on rising volume", group = grpV)
+dimQuiet = input.bool(false, "Also shade expansions on FALLING volume, faintly", group = grpV, tooltip = "Off by default. On, it draws the same bars in a much fainter shade so you can see expansions the volume did not confirm.")
+
+sSize = sigSize == "Normal" ? size.normal : sigSize == "Small" ? size.small : size.tiny
+
+// ── The levels. Both inputs are fixed by the prior bar, so these are known at ─
+// ── the current bar's open and do not move while the bar forms. ─────────────
+rangeup   = close[1] + ta.tr[1]
+rangedown = close[1] - ta.tr[1]
+
+plotUp = showDots and (not lastOnly or barstate.islast) ? rangeup   : na
+plotDn = showDots and (not lastOnly or barstate.islast) ? rangedown : na
+
+plot(plotUp, "Expansion-up trigger",   color = lvlCol, style = plot.style_circles, linewidth = lvlWidth, offset = lvlOffset)
+plot(plotDn, "Expansion-down trigger", color = lvlCol, style = plot.style_circles, linewidth = lvlWidth, offset = lvlOffset)
+
+// ── Confirmed expansions, on the published conditions ───────────────────────
+over  = strict ? (high > rangeup   and close > open and low  > low[1])  : (high > rangeup   and close > open)
+under = strict ? (low  < rangedown and close < open and high < high[1]) : (low  < rangedown and close < open)
+
+plotshape(showSig and over,  "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = sSize)
+plotshape(showSig and under, "Expansion down", style = shape.triangledown, location = location.abovebar, color = dnCol, size = sSize)
+
+// ── Volume confirmation ─────────────────────────────────────────────────────
+// Some instruments carry no volume at all (many indices and FX feeds), so this
+// checks for that rather than silently treating na as "not rising" and shading
+// nothing while looking like it is working.
+volOk    = not na(volume) and not na(volume[1])
+volRose  = volOk and volume > volume[1]
+
+bgUp   = useVol and over  and volRose
+bgDn   = useVol and under and volRose
+bgUpQ  = useVol and dimQuiet and over  and volOk and not volRose
+bgDnQ  = useVol and dimQuiet and under and volOk and not volRose
+
+bgcolor(bgUp  ? color.new(volUpCol, volTrans) :
+        bgDn  ? color.new(volDnCol, volTrans) :
+        bgUpQ ? color.new(volUpCol, math.min(99, volTrans + 45)) :
+        bgDnQ ? color.new(volDnCol, math.min(99, volTrans + 45)) : na,
+        title = "Volume-confirmed expansion")
+
+// ── Optional price labels, last bar only ────────────────────────────────────
+var label lblUp = na
+var label lblDn = na
+if showLabels and barstate.islast
+    label.delete(lblUp)
+    label.delete(lblDn)
+    lblUp := label.new(bar_index + lvlOffset, rangeup,   str.tostring(rangeup,   format.mintick), style = label.style_label_left, color = color.new(lvlCol, 88), textcolor = lvlCol, size = size.tiny)
+    lblDn := label.new(bar_index + lvlOffset, rangedown, str.tostring(rangedown, format.mintick), style = label.style_label_left, color = color.new(lvlCol, 88), textcolor = lvlCol, size = size.tiny)
+
+// ── Alerts ──────────────────────────────────────────────────────────────────
+// Level touches fire intrabar and are NOT completed signals, because the
+// close-based conditions cannot be known until the bar closes. Named so nobody
+// wires one up expecting the other.
+alertcondition(high > rangeup,   title = "Up trigger REACHED (not confirmed)",   message = "R.E.Signal Levels: {{ticker}} {{interval}} reached the expansion-up trigger. Not confirmed until the close.")
+alertcondition(low  < rangedown, title = "Down trigger REACHED (not confirmed)", message = "R.E.Signal Levels: {{ticker}} {{interval}} reached the expansion-down trigger. Not confirmed until the close.")
+alertcondition(over,             title = "Expansion up CONFIRMED",   message = "R.E.Signal Levels: confirmed range expansion up on {{ticker}} {{interval}}")
+alertcondition(under,            title = "Expansion down CONFIRMED", message = "R.E.Signal Levels: confirmed range expansion down on {{ticker}} {{interval}}")
+alertcondition(over  and volume > volume[1],  title = "Expansion up CONFIRMED, volume rising",   message = "R.E.Signal Levels: expansion up with rising volume on {{ticker}} {{interval}}")
+alertcondition(under and volume > volume[1],  title = "Expansion down CONFIRMED, volume rising", message = "R.E.Signal Levels: expansion down with rising volume on {{ticker}} {{interval}}")
