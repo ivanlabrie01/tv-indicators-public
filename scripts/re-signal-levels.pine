@@ -19,9 +19,13 @@
 //  one below: the prices at which THIS bar becomes a range expansion up or
 //  down. Same arithmetic as the 2015 original, read forwards instead of back.
 //
-//  It is a level, not a prediction. Price reaching it means the bar qualifies
-//  on the range test alone. The direction condition is not settled until the
-//  bar closes, so a touch is not a completed signal.
+//  A confirmed expansion is TWO conditions and only two:
+//    1. travel from the previous close exceeds the previous bar's true range
+//    2. the close finishes above the previous close (up) or below it (down)
+//
+//  It is a level, not a prediction. Price reaching it satisfies condition 1
+//  alone. Condition 2 is not settled until the bar closes, so a touch is not a
+//  completed signal.
 //
 //  VOLUME CONFIRMATION (optional, off by default) shades the background on
 //  confirmed expansions that also expanded volume against the prior bar. An
@@ -54,14 +58,13 @@ showLabels = input.bool(false, "Label the two prices", group = grpL)
 // ── Confirmed signals ───────────────────────────────────────────────────────
 grpS    = "Confirmed expansions"
 showSig = input.bool(true, "Mark confirmed expansions", group = grpS)
-strict  = input.bool(true, "Strict mode", group = grpS, tooltip = "On: also requires the bar to sit clear of the prior bar's extreme, which is the V2/V3 condition. Off: direction of close only, the original 2015 condition.")
 waitClose = input.bool(false, "Only mark once the bar has closed", group = grpS, tooltip = "OFF is the original behaviour: the triangle appears live on the forming bar as soon as the conditions are met, and can disappear again if price pulls back before the close. ON waits for the bar to close, so a mark that appears never un-appears. Off by default so this matches the published original.")
 upCol   = input.color(#26a69a, "Expansion up",   group = grpS)
 dnCol   = input.color(#ef5350, "Expansion down", group = grpS)
 
 // ── Volume confirmation ─────────────────────────────────────────────────────
 grpV     = "Volume confirmation"
-useVol   = input.bool(false, "Shade expansions that also expanded volume", group = grpV, tooltip = "Highlights bars where the range expanded AND volume rose against the prior bar. Applies across all history, not just the last bar.")
+useVol   = input.bool(true, "Shade expansions that also expanded volume", group = grpV, tooltip = "Highlights bars where the range expanded AND volume rose against the prior bar. Applies across all history, not just the last bar.")
 volTrans = input.int(40, "Shading transparency", minval = 0, maxval = 100, group = grpV)
 volUpCol = input.color(#26a69a, "Up, on rising volume",   group = grpV)
 volDnCol = input.color(#ef5350, "Down, on rising volume", group = grpV)
@@ -80,8 +83,13 @@ plot(plotUp, "Expansion-up trigger",   color = lvlCol, style = plot.style_circle
 plot(plotDn, "Expansion-down trigger", color = lvlCol, style = plot.style_circles, linewidth = lvlWidth, offset = lvlOffset)
 
 // ── Confirmed expansions, on the published conditions ───────────────────────
-over  = strict ? (high > rangeup   and close > open and low  > low[1])  : (high > rangeup   and close > open)
-under = strict ? (low  < rangedown and close < open and high < high[1]) : (low  < rangedown and close < open)
+// Two conditions, and only two:
+//   1. the travel from the previous close exceeds the previous bar's true range
+//   2. the close finishes on that side of the PREVIOUS CLOSE
+// Condition 1 restated: high > close[1] + tr[1] is the same statement as
+// (high - close[1]) > tr[1]. The level form is just the tradeable one.
+over  = high > rangeup   and close > close[1]
+under = low  < rangedown and close < close[1]
 
 confirmed = not waitClose or barstate.isconfirmed
 plotshape(showSig and over  and confirmed, "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = size.tiny)
