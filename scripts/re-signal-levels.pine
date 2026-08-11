@@ -26,7 +26,15 @@
 //  VOLUME CONFIRMATION (optional, off by default) shades the background on
 //  confirmed expansions that also expanded volume against the prior bar. An
 //  expansion on falling volume is a different event from one on rising volume,
-//  and the shading is there to stop them looking alike.
+//  and the shading is there to stop them looking alike. It evaluates on CLOSED
+//  bars only, because a forming bar's partial volume against a completed one
+//  measures elapsed time rather than participation.
+//
+//  REPAINTING, stated plainly: the triangles evaluate live, so one can appear
+//  mid-bar and disappear again if price pulls back before the close. That is
+//  the original's behaviour and it is kept as the default. There is a setting
+//  to wait for the close instead, which trades immediacy for a mark that never
+//  un-marks. No future data is used either way.
 // ============================================================================
 
 //@version=6
@@ -45,6 +53,7 @@ showLabels = input.bool(false, "Label the two prices", group = grpL)
 grpS    = "Confirmed expansions"
 showSig = input.bool(true, "Mark them at the close", group = grpS)
 strict  = input.bool(true, "Strict mode", group = grpS, tooltip = "On: also requires the bar to sit clear of the prior bar's extreme, which is the V2/V3 condition. Off: direction of close only, the original 2015 condition.")
+waitClose = input.bool(false, "Only mark once the bar has closed", group = grpS, tooltip = "OFF is the original behaviour: the triangle appears live on the forming bar as soon as the conditions are met, and can disappear again if price pulls back before the close. ON waits for the bar to close, so a mark that appears never un-appears. Off by default so this matches the published original.")
 upCol   = input.color(#26a69a, "Expansion up",   group = grpS)
 dnCol   = input.color(#ef5350, "Expansion down", group = grpS)
 sigSize = input.string("Tiny", "Marker size", options = ["Tiny", "Small", "Normal"], group = grpS)
@@ -74,14 +83,20 @@ plot(plotDn, "Expansion-down trigger", color = lvlCol, style = plot.style_circle
 over  = strict ? (high > rangeup   and close > open and low  > low[1])  : (high > rangeup   and close > open)
 under = strict ? (low  < rangedown and close < open and high < high[1]) : (low  < rangedown and close < open)
 
-plotshape(showSig and over,  "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = sSize)
-plotshape(showSig and under, "Expansion down", style = shape.triangledown, location = location.abovebar, color = dnCol, size = sSize)
+confirmed = not waitClose or barstate.isconfirmed
+plotshape(showSig and over  and confirmed, "Expansion up",   style = shape.triangleup,   location = location.belowbar, color = upCol, size = sSize)
+plotshape(showSig and under and confirmed, "Expansion down", style = shape.triangledown, location = location.abovebar, color = dnCol, size = sSize)
 
 // ── Volume confirmation ─────────────────────────────────────────────────────
 // Some instruments carry no volume at all (many indices and FX feeds), so this
 // checks for that rather than silently treating na as "not rising" and shading
 // nothing while looking like it is working.
-volOk    = not na(volume) and not na(volume[1])
+// 🔴 CLOSED BARS ONLY, AND THIS IS NOT A PREFERENCE. On a forming bar `volume`
+// is whatever has accumulated so far, and comparing that against the PRIOR
+// bar's completed volume is apples to oranges: it reads false early in the bar
+// and flips true near the end regardless of whether anything happened. The
+// shading would be a clock, not a signal. So it waits for the close.
+volOk    = not na(volume) and not na(volume[1]) and barstate.isconfirmed
 volRose  = volOk and volume > volume[1]
 
 bgUp   = useVol and over  and volRose
@@ -112,5 +127,5 @@ alertcondition(high > rangeup,   title = "Up trigger REACHED (not confirmed)",  
 alertcondition(low  < rangedown, title = "Down trigger REACHED (not confirmed)", message = "R.E.Signal Levels: {{ticker}} {{interval}} reached the expansion-down trigger. Not confirmed until the close.")
 alertcondition(over,             title = "Expansion up CONFIRMED",   message = "R.E.Signal Levels: confirmed range expansion up on {{ticker}} {{interval}}")
 alertcondition(under,            title = "Expansion down CONFIRMED", message = "R.E.Signal Levels: confirmed range expansion down on {{ticker}} {{interval}}")
-alertcondition(over  and volume > volume[1],  title = "Expansion up CONFIRMED, volume rising",   message = "R.E.Signal Levels: expansion up with rising volume on {{ticker}} {{interval}}")
-alertcondition(under and volume > volume[1],  title = "Expansion down CONFIRMED, volume rising", message = "R.E.Signal Levels: expansion down with rising volume on {{ticker}} {{interval}}")
+alertcondition(over  and volRose, title = "Expansion up CONFIRMED, volume rising",   message = "R.E.Signal Levels: expansion up with rising volume on {{ticker}} {{interval}}")
+alertcondition(under and volRose, title = "Expansion down CONFIRMED, volume rising", message = "R.E.Signal Levels: expansion down with rising volume on {{ticker}} {{interval}}")
