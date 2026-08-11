@@ -20,9 +20,10 @@ will go into the existing TradingView publications rather than new ones.
 The exceptions, which are current and written in Pine v6:
 
 - `expected-move-bands.pine` — the options-implied expected move, plotted as bands at ±1 and ±2 sigma
-  around price, anchored to the open of each week or month and held flat across the period. Pulls VIX
-  for equities and Deribit DVOL for crypto, and falls back to a realized-vol estimate (marked "est")
-  when no IV series exists for the symbol. Pairs with `vol-premium-gauge.pine`.
+  around price, anchored to the open of each week or month and held flat across the period. Uses a real
+  volatility index wherever the instrument has one (VIX, VXN, RVX, VXD, GVZ, OVX, EVZ, DVOL). Where it
+  doesn't, it derives IV from a reference index scaled by the realized-vol ratio and marks it DERIVED.
+  Where neither is possible it draws nothing and says why. Pairs with `vol-premium-gauge.pine`.
 - `cot-commercial-extreme.pine` — commercial hedger net positioning as a multi-year percentile, with
   the bottom tell: commercials covering en masse rather than adding is what marks a major low.
 - `crypto-cot-cohorts.pine` — the same CFTC cohort data for crypto futures, published as an honest
@@ -31,8 +32,15 @@ The exceptions, which are current and written in Pine v6:
 - `buyers-sellers-trapped.pine` — flags a bar that spikes beyond the prior bar's true range and then
   closes back inside it, trapping the traders who chased the extension. Original concept from 2017.
 - `regime-compass.pine` — a risk-on to crisis regime read composed from volatility, trend and momentum.
-- `vol-premium-gauge.pine` — implied minus realized volatility, with a Parkinson-based fallback when no
-  IV series is available for the symbol.
+- `vol-premium-gauge.pine` — implied minus realized volatility, reported only where implied vol is
+  directly observable. On an instrument with no volatility index of its own it plots realized vol and
+  reports no premium, rather than estimating one.
+
+Both vol scripts previously fell back to a realized-vol estimate, and scored every non-crypto symbol
+against CBOE:VIX — the implied vol of the S&P 500 rather than of the instrument on the chart. A typical
+single name realizes well above VIX, so the premium read "cheap" across nearly the whole equity universe
+and the expected-move bands came out systematically too narrow. Both now resolve IV in tiers and refuse
+to draw what they cannot source. Fixed 11 Aug 2026.
 
 ## Using them
 
